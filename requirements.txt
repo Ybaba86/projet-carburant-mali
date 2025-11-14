@@ -1,1 +1,7 @@
-streamlitsupabasestreamlit-foliumtwiliobcryptstreamlit-autorefresh
+streamlit
+supabase
+folium
+streamlit-folium
+twilio
+bcrypt
+streamlit-autorefresh
