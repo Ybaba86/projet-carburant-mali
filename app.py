@@ -5,17 +5,17 @@ import folium
 import logging
 from datetime import datetime, timedelta
 from twilio.rest import Client as TwilioClient
-# import from streamlit_autorefresh (SUPPRIMÉ)
+from streamlit_autorefresh import st_autorefresh # Importé pour le rafraîchissement
 import bcrypt
 
 # --- 0. Configuration de la Page ---
-# "wide" est toujours bon, car Streamlit le gère sur mobile
-st.set_page_config(page_title="Gestion Essence Bamako", layout="wide") 
+st.set_page_config(page_title="Gestion Carburant Mali", layout="wide") # <-- Titre de l'onglet modifié
 logging.basicConfig(level=logging.INFO)
 
 # --- 1. Connexion à Supabase & Twilio ---
 @st.cache_resource
 def init_connection():
+# ... (code inchangé) ...
     """Initialise la connexion à Supabase."""
     url = st.secrets["supabase"]["url"]
     key = st.secrets["supabase"]["key"]
@@ -26,6 +26,7 @@ supabase: Client = init_connection()
 # Cache pour le client Twilio
 @st.cache_resource
 def init_twilio_client():
+# ... (code inchangé) ...
     """Initialise le client Twilio."""
     try:
         account_sid = st.secrets["twilio"]["account_sid"]
@@ -42,6 +43,7 @@ TWILIO_PHONE_NUMBER = st.secrets["twilio"].get("phone_number")
 
 @st.cache_data(ttl=15)
 def get_stations():
+# ... (code inchangé) ...
     """
     Récupère la liste des stations ET LE COMPTAGE de leur file
     en appelant la fonction SQL (RPC) de Supabase.
@@ -54,6 +56,7 @@ def get_stations():
         return []
 
 def register_client(identifiant_vehicule, telephone_client, station_id):
+# ... (code inchangé) ...
     """Tente d'inscrire un client."""
     try:
         # Vérification 1: Règle des 2 jours
@@ -91,6 +94,7 @@ def register_client(identifiant_vehicule, telephone_client, station_id):
             return (False, "Erreur : Impossible de traiter l'inscription.")
 
 def get_client_status(identifiant_vehicule):
+# ... (code inchangé) ...
     """Récupère le statut d'un client ET LE STOCK DE LA STATION."""
     try:
         response = supabase.table("fileattente") \
@@ -131,6 +135,7 @@ def get_client_status(identifiant_vehicule):
 
 
 def send_sms(to_number, body_message):
+# ... (code inchangé) ...
     """Envoie un SMS via Twilio, en forçant le préfixe +223 si manquant."""
     if not twilio_client or not TWILIO_PHONE_NUMBER:
         logging.warning("Configuration Twilio manquante. SMS non envoyé.")
@@ -160,6 +165,7 @@ def send_sms(to_number, body_message):
 
 @st.cache_data(ttl=15)
 def get_queue_for_station(station_id):
+# ... (code inchangé) ...
     """Récupère les files 'notifie' (physique) et 'en_attente' (virtuelle) pour une station."""
     try:
         response_notifie = supabase.table("fileattente") \
@@ -182,6 +188,7 @@ def get_queue_for_station(station_id):
         return [], []
 
 def update_physical_queue(station_id, station_name, num_to_call, max_queue_size=10):
+# ... (code inchangé) ...
     """
     Met à jour la file physique en appelant 'num_to_call' clients,
     sans dépasser 'max_queue_size'.
@@ -246,6 +253,7 @@ def update_physical_queue(station_id, station_name, num_to_call, max_queue_size=
         logging.error(f"Erreur lors de la mise à jour de la file physique: {e}")
 
 def mark_as_served(file_id, identifiant_vehicule, station_id, litres_vendus):
+# ... (code inchangé) ...
     """Passe un client au statut 'servi', ajoute à l'historique ET DÉCRÉMENTE LE STOCK."""
     try:
         # 1. Mettre à jour le statut
@@ -274,6 +282,7 @@ def mark_as_served(file_id, identifiant_vehicule, station_id, litres_vendus):
         return False
 
 def cancel_queue_entry(file_id):
+# ... (code inchangé) ...
     """Appelle la fonction RPC pour annuler un client."""
     try:
         supabase.rpc('cancel_queue_entry', { 'p_file_id': file_id }).execute()
@@ -289,13 +298,19 @@ def cancel_queue_entry(file_id):
 def client_page(stations_data):
     """Affiche la page principale pour les clients."""
     
-    st.title("Bienvenue chez ⛽ Gas-Mali")
-    st.caption("Votre solution pour trouver du carburant à Bamako.")
+    # --- Auto-refresh (300 000ms = 5 minutes) ---
+    st_autorefresh(interval=300000, key="client_refresh")
+    
+    # --- MODIFIÉ : Titre ---
+    st.title("⛽ Plateforme de Gestion de Carburant")
+    st.caption("Gestion durant la Crise de carburant")
+    # --- FIN MODIFICATION ---
     
     # --- Navigation par onglets pour mobile ---
     tab1, tab2 = st.tabs(["🗺️ Localiser & S'inscrire", "🔍 Mon Statut"])
 
     with tab1:
+# ... (code inchangé) ...
         st.header("Localisez une station")
         if stations_data:
             map_center = [12.6392, -8.0029]
@@ -322,6 +337,7 @@ def client_page(stations_data):
 
         st.header("🎟️ S'inscrire à une file d'attente")
         if stations_data:
+# ... (code inchangé) ...
             station_options = {}
             for s in stations_data:
                 # Vérifie le stock en plus de la disponibilité
@@ -332,9 +348,11 @@ def client_page(stations_data):
                     station_options[display_name] = s['station_id']
 
             if not station_options:
+# ... (code inchangé) ...
                 st.warning("Aucune station n'a de carburant disponible pour le moment (stock > 0).")
             else:
                 with st.form("inscription_form"):
+# ... (code inchangé) ...
                     selected_station_name = st.selectbox(
                         'Choisissez votre station:', 
                         options=list(station_options.keys())
@@ -344,30 +362,37 @@ def client_page(stations_data):
                     submitted = st.form_submit_button("S'inscrire")
                     
                     if submitted:
+# ... (code inchangé) ...
                         identifiant_vehicule = identifiant_vehicule_raw.upper()
                         if not identifiant_vehicule or not telephone_client:
                             st.error("Veuillez remplir tous les champs.")
                         else:
                             with st.spinner("Vérification et inscription en cours..."):
+# ... (code inchangé) ...
                                 selected_station_id = station_options[selected_station_name]
                                 success, message = register_client(identifiant_vehicule, telephone_client, selected_station_id)
                             if success: st.success(message)
                             else: st.error(message)
 
     with tab2:
+# ... (code inchangé) ...
         st.header("🔍 Consulter mon statut")
         status_identifiant_raw = st.text_input("Entrez votre N° de plaque/cadre pour voir votre statut:", key="status_check_input")
         
         if st.button("Vérifier mon statut"):
+# ... (code inchangé) ...
             status_identifiant = status_identifiant_raw.upper()
             if not status_identifiant:
                 st.warning("Veuillez entrer un identifiant.")
             else:
                 with st.spinner("Recherche de votre position..."):
+# ... (code inchangé) ...
                     status_info, error = get_client_status(status_identifiant)
                 if error:
+# ... (code inchangé) ...
                     st.info(error)
                 elif status_info:
+# ... (code inchangé) ...
                     st.success(f"**Station :** {status_info['station']}")
                     
                     # --- st.metric pour un affichage plus joli ---
@@ -378,64 +403,82 @@ def client_page(stations_data):
                     st.metric(label="Stock restant à la station", value=f"{status_info['stock']} L")
                     
                     if status_info['statut'] == 'notifie':
+# ... (code inchangé) ...
+                        # CORRECTION : "station-service"
                         st.info("🔔 Vous avez été notifié ! Veuillez vous rendre à la station-service.")
 
 def pompiste_page(stations_data):
+# ... (code inchangé) ...
     """Affiche la page de gestion pour le pompiste."""
+    
+    # --- Auto-refresh (120 000ms = 2 minutes) ---
+    st_autorefresh(interval=120000, key="pompiste_refresh")
     
     st.title("🧑‍💼 Interface Pompiste")
     
     if 'pompiste_logged_in' not in st.session_state:
+# ... (code inchangé) ...
         st.session_state['pompiste_logged_in'] = False
         st.session_state['station_id'] = None
         st.session_state['station_name'] = None
 
     if not st.session_state['pompiste_logged_in']:
+# ... (code inchangé) ...
         
         with st.form("login_form"):
+# ... (code inchangé) ...
             username = st.text_input("Nom d'utilisateur")
             password = st.text_input("Mot de passe", type="password")
             login_button = st.form_submit_button("Se connecter")
         
         if login_button:
+# ... (code inchangé) ...
             if not username or not password:
                 st.error("Veuillez entrer un nom d'utilisateur et un mot de passe.")
                 return
 
             found_station = None
             for station in stations_data:
+# ... (code inchangé) ...
                 if station.get('pompiste_username') == username:
                     stored_hash_str = station.get('pompiste_password')
                     if stored_hash_str:
+# ... (code inchangé) ...
                         try:
                             stored_hash_bytes = stored_hash_str.encode('utf-8')
                             entered_password_bytes = password.encode('utf-8')
                             
                             if bcrypt.checkpw(entered_password_bytes, stored_hash_bytes):
+# ... (code inchangé) ...
                                 found_station = station
                                 break
                         except Exception as e:
+# ... (code inchangé) ...
                             logging.error(f"Erreur Bcrypt: {e}")
                             st.error("Erreur lors de la vérification du mot de passe.")
                     
             
             if found_station:
+# ... (code inchangé) ...
                 st.session_state['pompiste_logged_in'] = True
                 st.session_state['station_id'] = found_station['station_id']
                 st.session_state['station_name'] = found_station['nom_station']
                 st.rerun()
             else:
+# ... (code inchangé) ...
                 st.error("Nom d'utilisateur ou mot de passe incorrect.")
         
         return
     
     # --- SI LE POMPISTE EST CONNECTÉ ---
     selected_station_id = st.session_state['station_id']
+# ... (code inchangé) ...
     selected_station_name = st.session_state['station_name']
 
     st.success(f"Connecté en tant que: {selected_station_name}")
     
     if st.button("Se déconnecter", type="primary"):
+# ... (code inchangé) ...
         st.session_state['pompiste_logged_in'] = False
         st.session_state['station_id'] = None
         st.session_state['station_name'] = None
@@ -443,6 +486,7 @@ def pompiste_page(stations_data):
 
     # --- Tableau de Bord Intuitif ---
     st.header("Tableau de Bord")
+# ... (code inchangé) ...
     
     # Récupérer les données une seule fois
     current_station_data = next((s for s in stations_data if s['station_id'] == selected_station_id), None)
@@ -451,6 +495,7 @@ def pompiste_page(stations_data):
     
     # Afficher les métriques
     col_met1, col_met2, col_met3 = st.columns(3)
+# ... (code inchangé) ...
     col_met1.metric("Stock Restant", f"{int(stock)} L")
     col_met2.metric("File Physique", f"{len(file_physique)} / 10")
     col_met3.metric("File Virtuelle", f"{len(file_virtuelle)}")
@@ -458,15 +503,18 @@ def pompiste_page(stations_data):
     
     # --- Section des Actions ---
     st.subheader("Actions Pompiste")
+# ... (code inchangé) ...
     col_btn1, col_btn2 = st.columns([1,2])
     with col_btn1:
         if st.button("Rafraîchir (Manuel)"):
+# ... (code inchangé) ...
             get_queue_for_station.clear()
             get_stations.clear()
             st.rerun()
             
     with col_btn2:
         num_to_call = st.selectbox(
+# ... (code inchangé) ...
             "Nombre de clients à appeler :",
             options=[1, 3, 5, 10],
             index=0,
@@ -474,6 +522,7 @@ def pompiste_page(stations_data):
         )
         
         if st.button(f"Appeler {num_to_call} client(s) de la file virtuelle"):
+# ... (code inchangé) ...
             with st.spinner("Appel des clients suivants..."):
                 update_physical_queue(selected_station_id, selected_station_name, num_to_call)
             get_queue_for_station.clear() 
@@ -483,19 +532,23 @@ def pompiste_page(stations_data):
 
     # --- Section des Files ---
     col_file1, col_file2 = st.columns(2)
+# ... (code inchangé) ...
     
     with col_file1:
         st.subheader(f"File Physique (Notifiés) : {len(file_physique)} / 10")
         with st.container(height=400):
+# ... (code inchangé) ...
             if not file_physique:
                 st.info("La file physique est vide.")
             else:
                 for i, client in enumerate(file_physique):
+# ... (code inchangé) ...
                     key_base = client['file_id'] 
                     st.markdown(f"**Client: {client['identifiant_vehicule']}**")
                     
                     # --- Logique conditionnelle basée sur le stock ---
                     if stock > 0:
+# ... (code inchangé) ...
                         # Si le stock est OK, afficher le formulaire de service
                         litres_vendus = st.number_input(
                             "Litres vendus:", 
@@ -507,13 +560,16 @@ def pompiste_page(stations_data):
                         )
                         
                         if st.button(f"Marquer comme Servi", key=f"servi_btn_{key_base}"):
+# ... (code inchangé) ...
                             
                             litres_to_deduct = st.session_state[f"litres_{key_base}"]
                             
                             if litres_to_deduct > stock:
+# ... (code inchangé) ...
                                 st.error(f"Erreur : Vous ne pouvez pas vendre {litres_to_deduct}L, il ne reste que {stock}L.")
                             else:
                                 with st.spinner("Mise à jour..."):
+# ... (code inchangé) ...
                                     success = mark_as_served(
                                         client['file_id'], 
                                         client['identifiant_vehicule'], 
@@ -522,6 +578,7 @@ def pompiste_page(stations_data):
                                     )
                                 
                                 if success:
+# ... (code inchangé) ...
                                     st.success(f"Client {client['identifiant_vehicule']} marqué comme servi.")
                                     # Appeler 1 client pour remplacer celui qui part
                                     update_physical_queue(selected_station_id, selected_station_name, num_to_call=1)
@@ -529,12 +586,15 @@ def pompiste_page(stations_data):
                                     get_stations.clear()
                                     st.rerun()
                     else:
+# ... (code inchangé) ...
                         # Si le stock est à 0, afficher le bouton d'annulation
                         st.warning(f"Stock épuisé ({stock}L). Vous ne pouvez plus servir.")
                         if st.button("Annuler (Stock Épuisé)", key=f"cancel_btn_{key_base}", type="primary"):
                             with st.spinner("Annulation du client..."):
+# ... (code inchangé) ...
                                 success = cancel_queue_entry(client['file_id'])
                                 if success:
+# ... (code inchangé) ...
                                     st.success(f"Client {client['identifiant_vehicule']} annulé et libéré.")
                                     get_queue_for_station.clear()
                                     get_stations.clear()
@@ -543,45 +603,55 @@ def pompiste_page(stations_data):
                     st.divider()
 
     with col_file2:
+# ... (code inchangé) ...
         st.subheader(f"File Virtuelle (En attente) : {len(file_virtuelle)}")
         with st.container(height=400):
             if not file_virtuelle:
+# ... (code inchangé) ...
                 st.info("La file virtuelle est vide.")
             else:
                 st.write("Prochains clients en attente :")
-                for client in file_vertuelle:
+                for client in file_virtuelle:
+# ... (code inchangé) ...
                     st.text(client['identifiant_vehicule'])
 
 # --- PAGE ADMIN ---
 def admin_page(stations_data):
+# ... (code inchangé) ...
     """Affiche la page d'administration pour gérer les utilisateurs pompistes."""
     st.title("👑 Interface Administrateur")
 
     try:
+# ... (code inchangé) ...
         ADMIN_PASSWORD = st.secrets["admin"]["password"]
     except KeyError:
         st.error("Mot de passe admin non configuré dans secrets.toml.")
         return
 
     admin_pass = st.text_input("Mot de passe Administrateur", type="password", key="admin_pass")
+# ... (code inchangé) ...
 
     if not admin_pass:
         st.warning("Veuillez entrer le mot de passe admin.")
         return
 
     if admin_pass != ADMIN_PASSWORD:
+# ... (code inchangé) ...
         st.error("Mot de passe admin incorrect.")
         return
 
     st.success("Accès Administrateur autorisé.")
+# ... (code inchangé) ...
     st.header("Gérer les comptes Pompiste")
     st.info("Créez ou mettez à jour le nom d'utilisateur, le mot de passe et le stock pour une station.")
 
     if not stations_data:
+# ... (code inchangé) ...
         st.warning("Aucune station à configurer.")
         return
 
     station_options = {s['nom_station']: s for s in stations_data}
+# ... (code inchangé) ...
     
     selected_station_name = st.selectbox(
         "Sélectionnez une station à modifier:",
@@ -589,25 +659,30 @@ def admin_page(stations_data):
     )
 
     if selected_station_name:
+# ... (code inchangé) ...
         selected_station = station_options[selected_station_name]
         station_id = selected_station['station_id']
         current_username = selected_station.get('pompiste_username', "")
         current_stock = selected_station.get('stock_estime', 0)
         
         st.subheader(f"Modification de : {selected_station_name}")
+# ... (code inchangé) ...
         
         with st.form(key=f"form_{station_id}"):
             new_username = st.text_input(
+# ... (code inchangé) ...
                 "Nom d'utilisateur Pompiste", 
                 value=current_username, 
                 key=f"user_{station_id}"
             )
             new_password = st.text_input(
+# ... (code inchangé) ...
                 "Nouveau Mot de Passe (laisser vide pour ne pas changer)", 
                 type="password", 
                 key=f"pass_{station_id}"
             )
             new_stock = st.number_input(
+# ... (code inchangé) ...
                 "Stock estimé (Litres)", 
                 min_value=0, 
                 value=int(current_stock), 
@@ -616,12 +691,15 @@ def admin_page(stations_data):
             )
             
             submit_button = st.form_submit_button("Mettre à jour")
+# ... (code inchangé) ...
 
             if submit_button:
                 if not new_username:
+# ... (code inchangé) ...
                     st.error("Le nom d'utilisateur ne peut pas être vide.")
                 else:
                     try:
+# ... (code inchangé) ...
                         # --- MODIFIÉ : Mettre à jour la disponibilité avec le stock ---
                         update_data = {
                             "pompiste_username": new_username,
@@ -630,27 +708,57 @@ def admin_page(stations_data):
                         }
                         
                         if new_password:
+# ... (code inchangé) ...
                             st.spinner("Hachage du mot de passe...")
                             salt = bcrypt.gensalt()
                             hashed_password_bytes = bcrypt.hashpw(new_password.encode('utf-8'), salt)
                             update_data["pompiste_password"] = hashed_password_bytes.decode('utf-8')
                             logging.info(f"Nouveau hachage créé pour {new_username}")
 
+                        # --- CORRECTION DE L'INDENTATION CI-DESSOUS ---
                         supabase.table("stations") \
                             .update(update_data) \
                             .eq("station_id", station_id) \
                             .execute()
                         
                         st.success(f"Informations pour {selected_station_name} mises à jour !")
-                        get_stations.clear()
+                        get_stations.clear() # Vider le cache
                         st.rerun()
 
                     except Exception as e:
+# ... (code inchangé) ...
                         st.error(f"Erreur lors de la mise à jour: {e}")
 
 # --- 4. Routeur Principal ---
 def main():
     """Routeur principal pour naviguer entre les pages."""
+    
+    # --- CSS CORRIGÉ (Version "Agressive") ---
+    st.markdown("""
+        <style>
+            /* Cible le conteneur principal de la page */
+            div.block-container {
+                padding-top: 1.5rem !important;
+            }
+            
+            /* Cible la zone principale où le contenu est rendu */
+            [data-testid="stAppViewContainer"] > section {
+                padding-top: 1rem !important;
+            }
+            
+            /* Réduire l'espace en haut de la page principale */
+            [data-testid="stAppViewContainer"] > section:first-child {
+                padding-top: 0rem !important;
+            }
+            
+            /* Cible le bloc principal pour réduire sa marge supérieure */
+            [data-testid="main-content"] {
+                padding-top: 1.5rem !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+    # --- FIN DU CSS ---
+
     stations = get_stations()
     
     page = st.query_params.get("page", "client")
