@@ -733,7 +733,7 @@ def admin_page(stations_data):
 def main():
     """Routeur principal pour naviguer entre les pages."""
     
-    # --- CSS CORRIGÉ (Version "Agressive") ---
+    # --- CSS CORRIGÉ (Version "Agressive" + "wrap text") ---
     st.markdown("""
         <style>
             /* Cible le conteneur principal de la page */
@@ -754,6 +754,19 @@ def main():
             /* Cible le bloc principal pour réduire sa marge supérieure */
             [data-testid="main-content"] {
                 padding-top: 1.5rem !important;
+            }
+
+            /* --- NOUVEAU : Forcer le retour à la ligne dans les selectbox --- */
+            
+            /* Cible le texte de la selectbox une fois sélectionné */
+            [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+                white-space: normal; /* Autorise le retour à la ligne */
+            }
+            
+            /* Cible les options dans la liste déroulante */
+            div[data-baseweb="popover"] li {
+                white-space: normal !important; /* Force le retour à la ligne */
+                line-height: 1.4; /* Améliore la lisibilité */
             }
         </style>
         """, unsafe_allow_html=True)
