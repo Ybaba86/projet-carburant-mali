@@ -733,47 +733,37 @@ def admin_page(stations_data):
 def main():
     """Routeur principal pour naviguer entre les pages."""
     
-    # --- CSS CORRIGÉ (Version "Agressive" + "wrap text" v2) ---
+    # --- CSS CORRIGÉ (Version "Agressive" + "wrap text" v3) ---
     st.markdown("""
         <style>
-            /* Cible le conteneur principal de la page */
+            /* --- Réduire padding du haut --- */
             div.block-container {
                 padding-top: 1rem !important;
             }
-            
-            /* Cible la zone principale où le contenu est rendu */
             [data-testid="stAppViewContainer"] > section {
                 padding-top: 1rem !important;
             }
-            
-            /* Réduire l'espace en haut de la page principale */
             [data-testid="stAppViewContainer"] > section:first-child {
                 padding-top: 0rem !important;
             }
-            
-            /* Cible le bloc principal pour réduire sa marge supérieure */
             [data-testid="main-content"] {
                 padding-top: 1rem !important;
             }
 
-            /* --- NOUVEAU : Forcer le retour à la ligne dans les selectbox --- */
+            /* --- Forcer le retour à la ligne (wrap) dans les selectbox --- */
             
-            /* Cible le conteneur du selectbox */
-            [data-testid="stSelectbox"] {
-                width: 100% !important; /* Assure qu'il prend toute la largeur */
-            }
-    
-            /* Cible le texte de la selectbox une fois sélectionné (plus agressif) */
-            [data-testid="stSelectbox"] div[data-baseweb="select"] > div > div {
-                white-space: normal !important; /* Forcer le retour à la ligne */
-                overflow: visible !important; /* Empêcher la coupure */
-                height: auto !important; /* Permettre au conteneur de grandir */
+            /* Cible le texte de l'élément sélectionné */
+            [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+                white-space: normal !important; /* Retour à la ligne */
+                overflow-wrap: break-word !important; /* Coupe le mot si nécessaire */
+                word-break: break-all !important; /* Coupe n'importe où */
             }
             
-            /* Cible les options dans la liste déroulante (popover) */
-            div[data-baseweb="popover"] li > div {
-                white-space: normal !important; /* Force le retour à la ligne */
-                line-height: 1.4 !important; /* Améliore la lisibilité */
+            /* Cible les options dans la liste déroulante */
+            div[data-baseweb="popover"] ul li {
+                white-space: normal !important; /* Retour à la ligne */
+                overflow-wrap: break-word !important; /* Coupe le mot si nécessaire */
+                word-break: break-all !important; /* Coupe n'importe où */
             }
         </style>
         """, unsafe_allow_html=True)
