@@ -733,12 +733,12 @@ def admin_page(stations_data):
 def main():
     """Routeur principal pour naviguer entre les pages."""
     
-    # --- CSS CORRIGÉ (Version "Agressive" + "wrap text") ---
+    # --- CSS CORRIGÉ (Version "Agressive" + "wrap text" v2) ---
     st.markdown("""
         <style>
             /* Cible le conteneur principal de la page */
             div.block-container {
-                padding-top: 1.5rem !important;
+                padding-top: 1rem !important;
             }
             
             /* Cible la zone principale où le contenu est rendu */
@@ -753,20 +753,27 @@ def main():
             
             /* Cible le bloc principal pour réduire sa marge supérieure */
             [data-testid="main-content"] {
-                padding-top: 1.5rem !important;
+                padding-top: 1rem !important;
             }
 
             /* --- NOUVEAU : Forcer le retour à la ligne dans les selectbox --- */
             
-            /* Cible le texte de la selectbox une fois sélectionné */
-            [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-                white-space: normal; /* Autorise le retour à la ligne */
+            /* Cible le conteneur du selectbox */
+            [data-testid="stSelectbox"] {
+                width: 100% !important; /* Assure qu'il prend toute la largeur */
+            }
+    
+            /* Cible le texte de la selectbox une fois sélectionné (plus agressif) */
+            [data-testid="stSelectbox"] div[data-baseweb="select"] > div > div {
+                white-space: normal !important; /* Forcer le retour à la ligne */
+                overflow: visible !important; /* Empêcher la coupure */
+                height: auto !important; /* Permettre au conteneur de grandir */
             }
             
-            /* Cible les options dans la liste déroulante */
-            div[data-baseweb="popover"] li {
+            /* Cible les options dans la liste déroulante (popover) */
+            div[data-baseweb="popover"] li > div {
                 white-space: normal !important; /* Force le retour à la ligne */
-                line-height: 1.4; /* Améliore la lisibilité */
+                line-height: 1.4 !important; /* Améliore la lisibilité */
             }
         </style>
         """, unsafe_allow_html=True)
