@@ -297,6 +297,18 @@ def client_page(stations_data):
     tab1, tab2 = st.tabs(["🗺️ Localiser & S'inscrire", "🔍 Mon Statut"])
 
     with tab1:
+        
+        # --- NOUVEAU : Logique d'affichage des messages (Succès/Erreur) ---
+        if 'inscription_message' in st.session_state and st.session_state.inscription_message:
+            message_type, text = st.session_state.inscription_message
+            if message_type == 'success':
+                st.success(text)
+            else:
+                st.error(text)
+            # Effacer le message pour qu'il n'apparaisse qu'une seule fois
+            st.session_state.inscription_message = None 
+        # --- FIN NOUVEAU ---
+
         st.header("Localisez une station")
         if stations_data:
             map_center = [12.6392, -8.0029]
@@ -352,12 +364,18 @@ def client_page(stations_data):
                             with st.spinner("Vérification et inscription en cours..."):
                                 selected_station_id = station_options[selected_station_name]
                                 success, message = register_client(identifiant_vehicule, telephone_client, selected_station_id)
+                            
+                            # --- NOUVEAU : Logique de message avec st.session_state ---
                             if success: 
-                                st.success(message)
-                                get_stations.clear() # <-- CORRECTION BUG: Vider le cache
-                                st.rerun() # <-- CORRECTION BUG: Recharger la page
+                                st.session_state.inscription_message = ('success', message)
+                                get_stations.clear() # Vider le cache
+                                st.rerun() # Recharger la page
                             else: 
-                                st.error(message)
+                                # Si c'est une erreur, on la stocke aussi pour l'afficher
+                                st.session_state.inscription_message = ('error', message)
+                                # PAS de rerun() pour que l'utilisateur n'ait pas à tout retaper
+                            # --- FIN NOUVEAU ---
+
 
     with tab2:
         st.header("🔍 Consulter mon statut")
