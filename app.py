@@ -5,7 +5,7 @@ import folium
 import logging
 from datetime import datetime, timedelta
 from twilio.rest import Client as TwilioClient
-# from streamlit_autorefresh import st_autorefresh # <-- SUPPRIMÉ
+from streamlit_autorefresh import st_autorefresh # Importé pour le rafraîchissement
 import bcrypt
 
 # --- 0. Configuration de la Page ---
@@ -288,18 +288,22 @@ def cancel_queue_entry(file_id):
 def client_page(stations_data):
     """Affiche la page principale pour les clients."""
     
-    # --- Auto-refresh SUPPRIMÉ ---
+    # --- Auto-refresh (300 000ms = 5 minutes) ---
+    st_autorefresh(interval=300000, key="client_refresh")
     
     st.title("⛽ Plateforme de Gestion de Carburant")
     st.caption("Gestion durant la Crise de carburant")
     
+    # --- MODIFIÉ : Afficher le toast si il est en session_state ---
+    if "toast_message" in st.session_state:
+        st.toast(st.session_state.toast_message, icon="✅")
+        del st.session_state.toast_message # L'effacer après affichage
+    # --- FIN MODIFICATION ---
+
     # --- Navigation par onglets pour mobile ---
     tab1, tab2 = st.tabs(["🗺️ Localiser & S'inscrire", "🔍 Mon Statut"])
 
     with tab1:
-        
-        # --- MODIFIÉ : Utiliser st.toast pour les notifications ---
-
         st.header("Localisez une station")
         if stations_data:
             map_center = [12.6392, -8.0029]
@@ -356,16 +360,16 @@ def client_page(stations_data):
                                 selected_station_id = station_options[selected_station_name]
                                 success, message = register_client(identifiant_vehicule, telephone_client, selected_station_id)
                             
-                            # --- MODIFIÉ : Logique de notification avec st.toast ---
+                            # --- MODIFIÉ : Logique de notification avec session_state ---
                             if success: 
-                                st.toast(message, icon="✅") # Affiche la notification flottante
+                                # Stocker le message pour l'afficher APRES le rerun
+                                st.session_state.toast_message = message
                                 get_stations.clear() # Vider le cache
-                                st.rerun() # Recharger la page pour mettre à jour la file
+                                st.rerun() # Recharger la page
                             else: 
                                 # Si c'est une erreur, on l'affiche directement
                                 st.error(message)
                             # --- FIN MODIFICATION ---
-
 
     with tab2:
         st.header("🔍 Consulter mon statut")
@@ -375,6 +379,23 @@ def client_page(stations_data):
             status_identifiant_raw = st.text_input("Entrez votre N° de plaque/cadre pour voir votre statut:", key="status_check_input")
             submitted_status = st.form_submit_button("Vérifier mon statut")
             
+            # --- MODIFIÉ : Afficher le résultat du formulaire ---
+            if "status_check_result" in st.session_state:
+                status_info = st.session_state.status_check_result.get("info")
+                error = st.session_state.status_check_result.get("error")
+                if error:
+                    st.info(error)
+                elif status_info:
+                    st.success(f"**Station :** {status_info['station']}")
+                    col_stat1, col_stat2 = st.columns(2)
+                    col_stat1.metric(label="Votre statut", value=status_info['statut'].capitalize())
+                    col_stat2.metric(label="Personnes devant vous", value=status_info['position'])
+                    st.metric(label="Stock restant à la station", value=f"{status_info['stock']} L")
+                    if status_info['statut'] == 'notifie':
+                        st.info("🔔 Vous avez été notifié ! Veuillez vous rendre à la station-service.")
+                # Nettoyer après affichage
+                del st.session_state.status_check_result
+
             if submitted_status: # <-- Logique déplacée à l'intérieur du formulaire
                 status_identifiant = status_identifiant_raw.upper()
                 if not status_identifiant:
@@ -382,26 +403,16 @@ def client_page(stations_data):
                 else:
                     with st.spinner("Recherche de votre position..."):
                         status_info, error = get_client_status(status_identifiant)
-                    if error:
-                        st.info(error)
-                    elif status_info:
-                        st.success(f"**Station :** {status_info['station']}")
-                        
-                        # --- st.metric pour un affichage plus joli ---
-                        col_stat1, col_stat2 = st.columns(2)
-                        col_stat1.metric(label="Votre statut", value=status_info['statut'].capitalize())
-                        col_stat2.metric(label="Personnes devant vous", value=status_info['position'])
-                        
-                        st.metric(label="Stock restant à la station", value=f"{status_info['stock']} L")
-                        
-                        if status_info['statut'] == 'notifie':
-                            # CORRECTION : "station-service"
-                            st.info("🔔 Vous avez été notifié ! Veuillez vous rendre à la station-service.")
+                    
+                    # --- MODIFIÉ : Stocker le résultat en session pour l'afficher après le rerun
+                    st.session_state.status_check_result = {"info": status_info, "error": error}
+                    st.rerun() # Recharger pour afficher le résultat en haut
 
 def pompiste_page(stations_data):
     """Affiche la page de gestion pour le pompiste."""
     
-    # --- Auto-refresh SUPPRIMÉ ---
+    # --- Auto-refresh (120 000ms = 2 minutes) ---
+    st_autorefresh(interval=120000, key="pompiste_refresh")
     
     st.title("🧑‍💼 Interface Pompiste")
     
