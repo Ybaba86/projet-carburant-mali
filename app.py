@@ -5,7 +5,7 @@ import folium
 import logging
 from datetime import datetime, timedelta
 from twilio.rest import Client as TwilioClient
-from streamlit_autorefresh import st_autorefresh # Importé pour le rafraîchissement
+# from streamlit_autorefresh import st_autorefresh # <-- SUPPRIMÉ
 import bcrypt
 
 # --- 0. Configuration de la Page ---
@@ -288,8 +288,7 @@ def cancel_queue_entry(file_id):
 def client_page(stations_data):
     """Affiche la page principale pour les clients."""
     
-    # --- Auto-refresh (300 000ms = 5 minutes) ---
-    st_autorefresh(interval=300000, key="client_refresh")
+    # --- Auto-refresh SUPPRIMÉ ---
     
     st.title("⛽ Plateforme de Gestion de Carburant")
     st.caption("Gestion durant la Crise de carburant")
@@ -353,41 +352,48 @@ def client_page(stations_data):
                             with st.spinner("Vérification et inscription en cours..."):
                                 selected_station_id = station_options[selected_station_name]
                                 success, message = register_client(identifiant_vehicule, telephone_client, selected_station_id)
-                            if success: st.success(message)
-                            else: st.error(message)
+                            if success: 
+                                st.success(message)
+                                get_stations.clear() # <-- CORRECTION BUG: Vider le cache
+                                st.rerun() # <-- CORRECTION BUG: Recharger la page
+                            else: 
+                                st.error(message)
 
     with tab2:
         st.header("🔍 Consulter mon statut")
-        status_identifiant_raw = st.text_input("Entrez votre N° de plaque/cadre pour voir votre statut:", key="status_check_input")
         
-        if st.button("Vérifier mon statut"):
-            status_identifiant = status_identifiant_raw.upper()
-            if not status_identifiant:
-                st.warning("Veuillez entrer un identifiant.")
-            else:
-                with st.spinner("Recherche de votre position..."):
-                    status_info, error = get_client_status(status_identifiant)
-                if error:
-                    st.info(error)
-                elif status_info:
-                    st.success(f"**Station :** {status_info['station']}")
-                    
-                    # --- st.metric pour un affichage plus joli ---
-                    col_stat1, col_stat2 = st.columns(2)
-                    col_stat1.metric(label="Votre statut", value=status_info['statut'].capitalize())
-                    col_stat2.metric(label="Personnes devant vous", value=status_info['position'])
-                    
-                    st.metric(label="Stock restant à la station", value=f"{status_info['stock']} L")
-                    
-                    if status_info['statut'] == 'notifie':
-                        # CORRECTION : "station-service"
-                        st.info("🔔 Vous avez été notifié ! Veuillez vous rendre à la station-service.")
+        # --- MODIFICATION : "Vérifier statut" est maintenant dans un formulaire ---
+        with st.form("status_check_form"):
+            status_identifiant_raw = st.text_input("Entrez votre N° de plaque/cadre pour voir votre statut:", key="status_check_input")
+            submitted_status = st.form_submit_button("Vérifier mon statut")
+            
+            if submitted_status: # <-- Logique déplacée à l'intérieur du formulaire
+                status_identifiant = status_identifiant_raw.upper()
+                if not status_identifiant:
+                    st.warning("Veuillez entrer un identifiant.")
+                else:
+                    with st.spinner("Recherche de votre position..."):
+                        status_info, error = get_client_status(status_identifiant)
+                    if error:
+                        st.info(error)
+                    elif status_info:
+                        st.success(f"**Station :** {status_info['station']}")
+                        
+                        # --- st.metric pour un affichage plus joli ---
+                        col_stat1, col_stat2 = st.columns(2)
+                        col_stat1.metric(label="Votre statut", value=status_info['statut'].capitalize())
+                        col_stat2.metric(label="Personnes devant vous", value=status_info['position'])
+                        
+                        st.metric(label="Stock restant à la station", value=f"{status_info['stock']} L")
+                        
+                        if status_info['statut'] == 'notifie':
+                            # CORRECTION : "station-service"
+                            st.info("🔔 Vous avez été notifié ! Veuillez vous rendre à la station-service.")
 
 def pompiste_page(stations_data):
     """Affiche la page de gestion pour le pompiste."""
     
-    # --- Auto-refresh (120 000ms = 2 minutes) ---
-    st_autorefresh(interval=120000, key="pompiste_refresh")
+    # --- Auto-refresh SUPPRIMÉ ---
     
     st.title("🧑‍💼 Interface Pompiste")
     
