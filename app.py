@@ -298,16 +298,7 @@ def client_page(stations_data):
 
     with tab1:
         
-        # --- NOUVEAU : Logique d'affichage des messages (Succès/Erreur) ---
-        if 'inscription_message' in st.session_state and st.session_state.inscription_message:
-            message_type, text = st.session_state.inscription_message
-            if message_type == 'success':
-                st.success(text)
-            else:
-                st.error(text)
-            # Effacer le message pour qu'il n'apparaisse qu'une seule fois
-            st.session_state.inscription_message = None 
-        # --- FIN NOUVEAU ---
+        # --- MODIFIÉ : Utiliser st.toast pour les notifications ---
 
         st.header("Localisez une station")
         if stations_data:
@@ -365,16 +356,15 @@ def client_page(stations_data):
                                 selected_station_id = station_options[selected_station_name]
                                 success, message = register_client(identifiant_vehicule, telephone_client, selected_station_id)
                             
-                            # --- NOUVEAU : Logique de message avec st.session_state ---
+                            # --- MODIFIÉ : Logique de notification avec st.toast ---
                             if success: 
-                                st.session_state.inscription_message = ('success', message)
+                                st.toast(message, icon="✅") # Affiche la notification flottante
                                 get_stations.clear() # Vider le cache
-                                st.rerun() # Recharger la page
+                                st.rerun() # Recharger la page pour mettre à jour la file
                             else: 
-                                # Si c'est une erreur, on la stocke aussi pour l'afficher
-                                st.session_state.inscription_message = ('error', message)
-                                # PAS de rerun() pour que l'utilisateur n'ait pas à tout retaper
-                            # --- FIN NOUVEAU ---
+                                # Si c'est une erreur, on l'affiche directement
+                                st.error(message)
+                            # --- FIN MODIFICATION ---
 
 
     with tab2:
