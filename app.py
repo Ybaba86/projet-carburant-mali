@@ -39,7 +39,7 @@ TWILIO_PHONE_NUMBER = st.secrets["twilio"].get("phone_number")
 
 # --- 2. Fonctions de la Base de Données ---
 
-@st.cache_data(ttl=15)
+# --- MODIFIÉ : Cache @st.cache_data(ttl=15) SUPPRIMÉ ---
 def get_stations():
     """
     Récupère la liste des stations ET LE COMPTAGE de leur file
@@ -157,7 +157,7 @@ def send_sms(to_number, body_message):
 
 # --- Fonctions Pompiste ---
 
-@st.cache_data(ttl=15)
+# --- MODIFIÉ : Cache @st.cache_data(ttl=15) SUPPRIMÉ ---
 def get_queue_for_station(station_id):
     """Récupère les files 'notifie' (physique) et 'en_attente' (virtuelle) pour une station."""
     try:
@@ -296,7 +296,8 @@ def client_page(stations_data):
     
     # --- MODIFIÉ : Afficher le toast si il est en session_state ---
     if "toast_message" in st.session_state:
-        st.toast(st.session_state.toast_message, icon="✅")
+        # MODIFIÉ : Ajout de duration=8000 (8 secondes)
+        st.toast(st.session_state.toast_message, icon="✅", duration=8000)
         del st.session_state.toast_message # L'effacer après affichage
     # --- FIN MODIFICATION ---
 
@@ -493,7 +494,7 @@ def pompiste_page(stations_data):
     with col_btn1:
         if st.button("Rafraîchir (Manuel)"):
             get_queue_for_station.clear()
-            get_stations.clear()
+            get_stations.clear() # Doit aussi vider le cache des stations pour le stock
             st.rerun()
             
     with col_btn2:
@@ -557,7 +558,7 @@ def pompiste_page(stations_data):
                                     # Appeler 1 client pour remplacer celui qui part
                                     update_physical_queue(selected_station_id, selected_station_name, num_to_call=1)
                                     get_queue_for_station.clear() 
-                                    get_stations.clear()
+                                    get_stations.clear() # Vider cache stock
                                     st.rerun()
                     else:
                         # Si le stock est à 0, afficher le bouton d'annulation
@@ -568,7 +569,7 @@ def pompiste_page(stations_data):
                                 if success:
                                     st.success(f"Client {client['identifiant_vehicule']} annulé et libéré.")
                                     get_queue_for_station.clear()
-                                    get_stations.clear()
+                                    get_stations.clear() # Vider cache stock
                                     st.rerun()
                     
                     st.divider()
