@@ -361,6 +361,7 @@ def client_page(stations_data):
                                 selected_station_id = station_options[selected_station_name]
                                 success, message = register_client(identifiant_vehicule, telephone_client, selected_station_id)
                             
+                            # --- MODIFIÉ : Logique de notification avec session_state ---
                             if success: 
                                 # Stocker le message pour l'afficher APRES le rerun
                                 st.session_state.toast_message = message
@@ -369,14 +370,17 @@ def client_page(stations_data):
                             else: 
                                 # Si c'est une erreur, on l'affiche directement
                                 st.error(message)
+                            # --- FIN MODIFICATION ---
 
     with tab2:
         st.header("🔍 Consulter mon statut")
         
+        # --- MODIFICATION : "Vérifier statut" est maintenant dans un formulaire ---
         with st.form("status_check_form"):
             status_identifiant_raw = st.text_input("Entrez votre N° de plaque/cadre pour voir votre statut:", key="status_check_input")
             submitted_status = st.form_submit_button("Vérifier mon statut")
             
+            # --- MODIFIÉ : Afficher le résultat du formulaire ---
             if "status_check_result" in st.session_state:
                 status_info = st.session_state.status_check_result.get("info")
                 error = st.session_state.status_check_result.get("error")
@@ -390,9 +394,10 @@ def client_page(stations_data):
                     st.metric(label="Stock restant à la station", value=f"{status_info['stock']} L")
                     if status_info['statut'] == 'notifie':
                         st.info("🔔 Vous avez été notifié ! Veuillez vous rendre à la station-service.")
+                # Nettoyer après affichage
                 del st.session_state.status_check_result
 
-            if submitted_status: 
+            if submitted_status: # <-- Logique déplacée à l'intérieur du formulaire
                 status_identifiant = status_identifiant_raw.upper()
                 if not status_identifiant:
                     st.warning("Veuillez entrer un identifiant.")
@@ -400,8 +405,9 @@ def client_page(stations_data):
                     with st.spinner("Recherche de votre position..."):
                         status_info, error = get_client_status(status_identifiant)
                     
+                    # --- MODIFIÉ : Stocker le résultat en session pour l'afficher après le rerun
                     st.session_state.status_check_result = {"info": status_info, "error": error}
-                    st.rerun() 
+                    st.rerun() # Recharger pour afficher le résultat en haut
 
 def pompiste_page(stations_data):
     """Affiche la page de gestion pour le pompiste."""
@@ -487,8 +493,8 @@ def pompiste_page(stations_data):
     col_btn1, col_btn2 = st.columns([1,2])
     with col_btn1:
         if st.button("Rafraîchir (Manuel)"):
-            # get_queue_for_station.clear() # <-- Ligne supprimée
-            # get_stations.clear() # <-- Ligne supprimée
+            # get_queue_for_station.clear() # <-- CORRECTION : Ligne supprimée
+            # get_stations.clear() # <-- CORRECTION : Ligne supprimée
             st.rerun()
             
     with col_btn2:
@@ -502,7 +508,7 @@ def pompiste_page(stations_data):
         if st.button(f"Appeler {num_to_call} client(s) de la file virtuelle"):
             with st.spinner("Appel des clients suivants..."):
                 update_physical_queue(selected_station_id, selected_station_name, num_to_call)
-            # get_queue_for_station.clear() # <-- Ligne supprimée
+            # get_queue_for_station.clear() # <-- CORRECTION : Ligne supprimée
             st.rerun()
     
     st.divider()
@@ -551,8 +557,8 @@ def pompiste_page(stations_data):
                                     st.success(f"Client {client['identifiant_vehicule']} marqué comme servi.")
                                     # Appeler 1 client pour remplacer celui qui part
                                     update_physical_queue(selected_station_id, selected_station_name, num_to_call=1)
-                                    # get_queue_for_station.clear() # <-- Ligne supprimée
-                                    # get_stations.clear() # <-- Ligne supprimée
+                                    # get_queue_for_station.clear() # <-- CORRECTION : Ligne supprimée
+                                    # get_stations.clear() # <-- CORRECTION : Ligne supprimée
                                     st.rerun()
                     else:
                         # Si le stock est à 0, afficher le bouton d'annulation
@@ -562,8 +568,8 @@ def pompiste_page(stations_data):
                                 success = cancel_queue_entry(client['file_id'])
                                 if success:
                                     st.success(f"Client {client['identifiant_vehicule']} annulé et libéré.")
-                                    # get_queue_for_station.clear() # <-- Ligne supprimée
-                                    # get_stations.clear() # <-- Ligne supprimée
+                                    # get_queue_for_station.clear() # <-- CORRECTION : Ligne supprimée
+                                    # get_stations.clear() # <-- CORRECTION : Ligne supprimée
                                     st.rerun()
                     
                     st.divider()
@@ -668,7 +674,7 @@ def admin_page(stations_data):
                             .execute()
                         
                         st.success(f"Informations pour {selected_station_name} mises à jour !")
-                        # get_stations.clear() # <-- Ligne supprimée
+                        # get_stations.clear() # <-- CORRECTION : Ligne supprimée
                         st.rerun()
 
                     except Exception as e:
